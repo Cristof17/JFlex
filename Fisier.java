@@ -39,9 +39,10 @@ public class Fisier {
    * Translates characters to character classes
    */
   private static final String ZZ_CMAP_PACKED = 
-    "\12\0\1\0\1\10\1\10\1\10\32\0\1\5\1\7\1\3\1\0"+
-    "\1\6\24\0\32\1\1\0\1\0\4\0\15\1\1\1\14\1\1\2"+
-    "\1\0\1\4\7\0\1\10\u1fa2\0\1\10\1\10\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\udfe6\0";
+    "\12\0\1\0\1\7\1\7\1\7\22\0\2\1\1\0\5\1\1\5"+
+    "\1\6\2\1\1\3\1\0\2\1\1\0\11\1\1\0\41\1\1\0"+
+    "\21\1\1\1\14\1\1\2\1\1\1\4\1\1\6\0\1\7\u1fa2\0"+
+    "\1\7\1\7\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\uffff\0\udfe6\0";
 
   /** 
    * Translates characters to character classes
@@ -82,8 +83,8 @@ public class Fisier {
   private static final int [] ZZ_ROWMAP = zzUnpackRowMap();
 
   private static final String ZZ_ROWMAP_PACKED_0 =
-    "\0\0\0\11\0\22\0\33\0\44\0\11\0\11\0\22"+
-    "\0\11\0\55\0\66\0\77\0\110\0\44\0\121\0\11";
+    "\0\0\0\10\0\20\0\30\0\40\0\10\0\10\0\20"+
+    "\0\10\0\50\0\60\0\70\0\30\0\100\0\110\0\10";
 
   private static int [] zzUnpackRowMap() {
     int [] result = new int[16];
@@ -109,14 +110,14 @@ public class Fisier {
   private static final int [] ZZ_TRANS = zzUnpackTrans();
 
   private static final String ZZ_TRANS_PACKED_0 =
-    "\2\2\1\3\2\2\1\4\1\5\1\6\1\7\12\0"+
-    "\1\10\1\0\1\10\1\11\1\0\1\10\3\0\1\12"+
-    "\10\0\1\13\4\0\1\14\1\6\7\0\1\15\10\0"+
-    "\1\16\1\6\7\0\1\14\1\6\2\0\1\17\16\0"+
-    "\1\20\1\0";
+    "\2\2\1\3\1\4\1\2\1\5\1\6\1\7\11\0"+
+    "\1\10\1\0\1\10\1\11\4\0\1\12\1\0\1\13"+
+    "\2\0\1\6\2\0\1\14\11\0\1\15\2\0\1\6"+
+    "\4\0\1\13\2\0\1\6\4\0\1\16\5\0\1\17"+
+    "\14\0\1\20\1\0";
 
   private static int [] zzUnpackTrans() {
-    int [] result = new int[90];
+    int [] result = new int[80];
     int offset = 0;
     offset = zzUnpackTrans(ZZ_TRANS_PACKED_0, offset, result);
     return result;
@@ -237,6 +238,7 @@ public class Fisier {
 	ArrayList<String> terminals;
 	ArrayList<Rule> rules;
 	ArrayList<String> start;
+	ArrayList<String>useless;
 
 
   /**
@@ -249,6 +251,7 @@ public class Fisier {
 	this.terminals = new ArrayList<String>();
 	this.rules = new ArrayList<Rule>();
 	this.start = new ArrayList<String>();
+	this.useless = new ArrayList<String>();
     this.zzReader = in;
   }
 
@@ -263,7 +266,7 @@ public class Fisier {
     char [] map = new char[0x110000];
     int i = 0;  /* index in packed string  */
     int j = 0;  /* index in unpacked array */
-    while (i < 88) {
+    while (i < 98) {
       int  count = packed.charAt(i++);
       char value = packed.charAt(i++);
       do map[j++] = value; while (--count > 0);
@@ -467,6 +470,33 @@ public class Fisier {
 
 
   /**
+   * Contains user EOF-code, which will be executed exactly once,
+   * when the end of file is reached
+   */
+  private void zzDoEOF() {
+    if (!zzEOFDone) {
+      zzEOFDone = true;
+    	boolean flagUseless = true;
+	for (String symbol: all){
+		for(Rule rule : rules){
+			if (rule.getLeft() == symbol){
+				flagUseless = false;
+			}
+		}
+		if (flagUseless == true && !terminals.contains(symbol)){
+			useless.add(symbol);
+		}
+	}
+
+	for (int i = 0; i < useless.size(); ++i){
+		System.out.println(useless.get(i));
+	}
+
+    }
+  }
+
+
+  /**
    * Resumes scanning until the next regular expression is matched,
    * the end of input is encountered or an I/O-Error occurs.
    *
@@ -609,6 +639,7 @@ public class Fisier {
 
       if (zzInput == YYEOF && zzStartRead == zzCurrentPos) {
         zzAtEOF = true;
+            zzDoEOF();
         return YYEOF;
       }
       else {
@@ -620,7 +651,7 @@ public class Fisier {
           case 2: 
             { System.out.println("Newline " + yytext());
 				String line = yytext();
-				StringTokenizer tokenizer = new StringTokenizer(line, ",) ");
+				StringTokenizer tokenizer = new StringTokenizer(line, ",) \\t");
 				while(tokenizer.hasMoreTokens()){
 					String token = tokenizer.nextToken();
 					start.add(token);	
@@ -638,18 +669,34 @@ public class Fisier {
           case 4: 
             { String line = yytext();	
 				System.out.println("Section "+ line);
-				StringTokenizer tokenizer = new StringTokenizer(line, "\\{\\},");
+				StringTokenizer tokenizer = new StringTokenizer(line, "\\{\\},\\t ");
+				/* If there has been a {Section} match, then the all list
+				   already contains symbols (both terminals and nonterminals)
+				   This means that this match is the match on terminals
+				*/
+				boolean terminalsFlag = false;
+				if (all.size() > 0){
+					terminalsFlag = true;
+				}
 				while(tokenizer.hasMoreTokens()){
 					String token = tokenizer.nextToken();
-					all.add(token);
+					if (terminalsFlag)
+						terminals.add(token);
+					else
+						all.add(token);
 				}
 				tokenizer = null;
+				if (terminals.size() > 0){
+					for (String terminal : terminals){
+						System.out.println("Terminal = " + terminal);
+					}
+				}
             }
           case 9: break;
           case 5: 
             { System.out.println("Rule " + yytext());
 				String line = yytext();
-				StringTokenizer tokenizer = new StringTokenizer(line," \\(\\),");
+				StringTokenizer tokenizer = new StringTokenizer(line," \\(\\)\\t,");
 				if(tokenizer.countTokens() == 2){
 					while(tokenizer.hasMoreTokens()){
 						String token_left = tokenizer.nextToken();
